@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include <iomanip>
 #include <memory>
 #include <chrono>
@@ -73,10 +74,45 @@ int time_cnn(unsigned int w, unsigned int h, unsigned int n, unsigned int c,
  * @param[in] argc Number of arguments
  * @param[in] argv Arguments ( [optional] Path to PPM image to process )
  */
-int main(int argc, const char **argv)
+int main(int argc, char **argv)
 {
-
     int num_repeats = 50;
+    int test_type = 2; /* 0: training_set, 1: inference_server_set, 2: inference_device_set */
+    std::vector<std::tuple<unsigned int, unsigned int, unsigned int, unsigned int,
+                           unsigned int, unsigned int, unsigned int,
+                           unsigned int, unsigned int, unsigned int, unsigned int>>*
+                           test_set = NULL;
+    test_set = &inference_device_set; // default
+
+    /* getopt */
+    int ch;
+    while ((ch = getopt(argc, argv, "t:")) != -1) {
+        // add ':' after the option if it needs an argument
+        switch (ch) {
+            case 't':
+                printf ("You specified the option -t \"%s\" option.\n", optarg);
+                sscanf(optarg, "%d", &test_type);
+                switch (test_type) {
+                case 0:
+                  test_set = &training_set;
+                  break;
+                case 1:
+                  test_set = &inference_server_set;
+                  break;
+                case 2:
+                  test_set = &inference_device_set;
+                  break;
+                default:
+                  printf("Invalid test_type %d\n", test_type);
+                  return 2;
+                }
+                break;
+            default:
+                printf ("You specified an invalid parameter.\n");
+                return 1;
+        }
+    }
+
     std::cout << std::setw(30) << "Times" << std::endl;
     std::cout << std::setfill('-') << std::setw(115) << "-" << std::endl;
     std::cout << std::setfill(' ');
@@ -85,7 +121,9 @@ int main(int argc, const char **argv)
     std::cout << std::setfill('-') << std::setw(115) << "-" << std::endl;
     std::cout << std::setfill(' ');
 
-    for (const auto &problem : inference_device_set) {
+
+
+    for (const auto &problem : *test_set) {
 
         // Filter parameters
         unsigned int k, c, filter_w, filter_h;

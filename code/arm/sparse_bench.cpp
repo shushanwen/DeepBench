@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include <algorithm>
 #include <cstdint>
 #include <iostream>
@@ -104,7 +105,37 @@ std::tuple<int, int> time_sparse_bench_helper(int m, int n, int k, float sparsit
     }
 }
 
-int main() {
+int main(int argc, char** argv) {
+
+    int test_type = 1; /* 0: inference_server_set, 1: inference_device_set */
+    std::vector< std::tuple<int, int, int, bool, bool, float> >* 
+        test_set = &inference_device_set; // default
+    
+    /* getopt */
+    int ch;
+    while ((ch = getopt(argc, argv, "t:")) != -1) {
+        // add ':' after the option if it needs an argument
+        switch (ch) {
+            case 't':
+                printf ("You specified the option -t \"%s\" option.\n", optarg);
+                sscanf(optarg, "%d", &test_type);
+                switch (test_type) {
+                case 0:
+                  test_set = &inference_server_set;
+                  break;
+                case 1:
+                  test_set = &inference_device_set;
+                  break;
+                default:
+                  printf("Invalid test_type %d\n", test_type);
+                  return 2;
+                }
+                break;
+            default:
+                printf ("You specified an invalid parameter.\n");
+                return 1;
+        }
+    }
 
     // Set up RNG
     std::random_device r;
@@ -120,7 +151,7 @@ int main() {
 
     for (const auto &type_name : types) {
 
-        for (const auto &problem : inference_device_set) {
+        for (const auto &problem : *test_set) {
 
             int m,n,k;
             bool a_t, b_t;
